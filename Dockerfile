@@ -55,7 +55,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 # Install poetry and curl (needed by entrypoint.sh maybe)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl rsync openssh-client && \
+    apt-get install -y --no-install-recommends curl rsync openssh-client jq sshpass && \
     rm -rf /var/lib/apt/lists/* && \
     pip install --no-cache-dir poetry aiohttp
 
