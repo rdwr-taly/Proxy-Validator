@@ -52,7 +52,7 @@ echo ">>> Container Proxy Generation Task Completed <<<"
 ################################################################################
 
 # This entire block is skipped unless the DISTRIBUTE_FILE variable is explicitly set to "true".
-if [ "${DISTRIBUTE_FILE}" = "true" ]; then
+if [[ "${DISTRIBUTE_FILE,,}" =~ ^(1|true|yes|on)$ ]]; then
     echo ""
     echo "================================================================="
     echo ">>> Starting Flexible File Distribution (Keys & Passwords) <<<"
