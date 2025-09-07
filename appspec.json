@@ -1,0 +1,101 @@
+{
+  "capabilities": {
+    "can_stop": true
+  },
+  "category": "Security Tools",
+  "containerControl": {
+    "enabled": false
+  },
+  "deployment": {
+    "container_command_template": [
+      "--validate"
+    ],
+    "default_env_vars": [
+      {
+        "default_value": true,
+        "label": "Distribute File",
+        "name": "DISTRIBUTE_FILE",
+        "tooltip": "If true, the validated /app/output/HTTP.txt is pushed to remote servers.",
+        "type": "boolean"
+      },
+      {
+        "default_value": "/home/shared/proxies/HTTP.txt",
+        "label": "Destination Path (Remote)",
+        "name": "REMOTE_DEST_PATH",
+        "required": true,
+        "tooltip": "Remote absolute path where HTTP.txt will be copied (e.g., /var/www/proxies/HTTP.txt).",
+        "type": "string"
+      },
+      {
+        "default_value": "[]",
+        "item_name_label": "Host",
+        "label": "Server Configurations",
+        "name": "DISTRIBUTION_CONFIG_JSON",
+        "sub_fields_ref": [
+          "host",
+          "user",
+          "password"
+        ],
+        "tooltip": "Add one entry per server. Only username/password auth is exposed.",
+        "type": "string",
+        "ui_type": "field_group_list"
+      },
+      {
+        "label": "Host",
+        "name": "host",
+        "type": "string"
+      },
+      {
+        "label": "User",
+        "name": "user",
+        "type": "string"
+      },
+      {
+        "label": "Password",
+        "name": "password",
+        "tooltip": "Password used with sshpass for rsync.",
+        "type": "string",
+        "ui_type": "password"
+      }
+    ]
+  },
+  "deploymentContext": "app",
+  "description": "Validates generated proxy lists and (optionally) distributes the final HTTP.txt to remote servers using username/password.",
+  "displayName": "Proxy Validator Job",
+  "icon": "fas fa-server",
+  "id": "proxy-validator-job",
+  "image": {
+    "repo_tag": "razor29/proxy-validator:v1.1.0",
+    "description": ""
+  },
+  "scheduling_fields": {
+    "interval_unit": "minutes",
+    "interval_value": 20,
+    "max_concurrent_runs": 1,
+    "overlap_policy": "skip",
+    "start_time_utc": {
+      "label": "Start Time (UTC)",
+      "required": true
+    },
+    "type": "interval"
+  },
+  "subCategory": "Proxy Tools",
+  "taskLifecycle": "recurrent",
+  "ui": {
+    "deployment_form_sections": [
+      {
+        "fields": [
+          "DISTRIBUTE_FILE",
+          "REMOTE_DEST_PATH"
+        ],
+        "title": "General Settings"
+      },
+      {
+        "fields": [
+          "DISTRIBUTION_CONFIG_JSON"
+        ],
+        "title": "Servers"
+      }
+    ]
+  }
+}
