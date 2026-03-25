@@ -1,0 +1,92 @@
+{
+  "$schema": "showrunner/v1",
+  "id": "proxy-validator-job",
+  "name": "Proxy Validator Job",
+  "description": "Validates proxy lists and optionally distributes validated HTTP.txt to remote servers. Runs as a recurring job.",
+  "category": "Security Tools",
+  "subCategory": "Proxy Tools",
+  "icon": "fas fa-server",
+  "lifecycle": "recurrent",
+  "image": {
+    "name": "razor29/proxy-validator"
+  },
+  "sdk": {
+    "version": ">=0.1.0",
+    "metrics_port": 9090,
+    "health_path": "/healthz",
+    "metrics_path": "/metrics"
+  },
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "distribute_file": {
+        "type": "boolean",
+        "title": "Distribute File",
+        "default": true,
+        "description": "Push validated HTTP.txt to remote servers after validation"
+      },
+      "remote_dest_path": {
+        "type": "string",
+        "title": "Destination Path (Remote)",
+        "default": "/home/shared/proxies/HTTP.txt",
+        "description": "Remote absolute path where HTTP.txt will be copied"
+      },
+      "distribution_config": {
+        "type": "array",
+        "title": "Server Configurations",
+        "description": "List of servers to distribute to",
+        "items": {
+          "type": "object",
+          "properties": {
+            "host": {"type": "string", "title": "Host"},
+            "user": {"type": "string", "title": "User"},
+            "password": {"type": "string", "title": "Password", "format": "password"}
+          },
+          "required": ["host", "user"]
+        }
+      },
+      "validation_target_url": {
+        "type": "string",
+        "title": "Validation Target URL",
+        "default": "http://httpbin.org/ip"
+      },
+      "validation_timeout": {
+        "type": "integer",
+        "title": "Validation Timeout (seconds)",
+        "default": 5
+      },
+      "validation_concurrency": {
+        "type": "integer",
+        "title": "Validation Concurrency",
+        "default": 100
+      }
+    }
+  },
+  "scheduling": {
+    "type": "interval",
+    "default_interval_value": 20,
+    "default_interval_unit": "minutes",
+    "max_concurrent_runs": 1,
+    "overlap_policy": "skip"
+  },
+  "ui": {
+    "sections": [
+      {
+        "title": "General Settings",
+        "fields": ["distribute_file", "remote_dest_path", "validation_target_url", "validation_timeout", "validation_concurrency"]
+      },
+      {
+        "title": "Servers",
+        "fields": ["distribution_config"]
+      }
+    ],
+    "card_fields": {
+      "metrics": ["proxies_validated_total", "proxies_tested_total", "job_duration_seconds"]
+    }
+  },
+  "capabilities": {
+    "can_stop": true,
+    "can_redeploy": false,
+    "can_resume": false
+  }
+}
