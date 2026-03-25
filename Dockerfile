@@ -55,9 +55,9 @@ ENV PYTHONUNBUFFERED=1 \
 
 # Install runtime deps + showrunner-sdk
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl rsync openssh-client jq sshpass && \
+    apt-get install -y --no-install-recommends curl rsync openssh-client jq sshpass git && \
     rm -rf /var/lib/apt/lists/* && \
-    pip install --no-cache-dir poetry aiohttp "showrunner-sdk[full]>=0.1.0"
+    pip install --no-cache-dir poetry aiohttp "showrunner-sdk[full] @ git+https://github.com/rdwr-taly/showrunner-sdk.git@main"
 
 # Create a non-root user and group for security
 ARG UID=1000
