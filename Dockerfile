@@ -19,8 +19,8 @@ RUN apt-get update && \
         libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Poetry
-RUN pip install poetry
+# Install Poetry (pin packaging to avoid 'packaging.licenses' import error)
+RUN pip install --upgrade packaging && pip install poetry
 
 # Verify Poetry version
 RUN poetry --version
