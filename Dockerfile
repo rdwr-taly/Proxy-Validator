@@ -34,6 +34,9 @@ RUN poetry install --no-root
 # Copy the rest of the application code (including proXXy.py)
 COPY . /app/
 
+# Ensure packaging module is up to date (fixes 'packaging.licenses' import error)
+RUN pip install --upgrade packaging
+
 # Install the project itself
 RUN poetry install
 
