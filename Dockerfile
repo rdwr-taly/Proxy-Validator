@@ -53,11 +53,11 @@ ENV PYTHONUNBUFFERED=1 \
     VALIDATION_TIMEOUT="5" \
     VALIDATION_CONCURRENCY="100"
 
-# Install poetry and curl (needed by entrypoint.sh maybe)
+# Install runtime deps + showrunner-sdk
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl rsync openssh-client jq sshpass && \
     rm -rf /var/lib/apt/lists/* && \
-    pip install --no-cache-dir poetry aiohttp
+    pip install --no-cache-dir poetry aiohttp "showrunner-sdk[full]>=0.1.0"
 
 # Create a non-root user and group for security
 ARG UID=1000
@@ -81,11 +81,18 @@ COPY --chown=proxxy_user:proxxy_user entrypoint.sh /usr/local/bin/entrypoint.sh
 # ----> ADD: Make entrypoint script executable <----
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
+# Copy ShowRunner entry point
+COPY --chown=proxxy_user:proxxy_user main.py /app/main.py
+
+# Create config mount point
+RUN mkdir -p /config && chown proxxy_user:proxxy_user /config
+
 # Switch to the non-root user
 USER proxxy_user
 
-# ----> CHANGE: Point ENTRYPOINT to the wrapper script <----
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+EXPOSE 9090
 
-# Set the default command (arguments passed to entrypoint.sh, which passes them to proXXy.py)
-CMD ["--validate"]
+ENTRYPOINT ["python", "main.py"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
+  CMD curl -sf http://127.0.0.1:9090/healthz || exit 1
