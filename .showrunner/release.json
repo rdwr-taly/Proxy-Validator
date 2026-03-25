@@ -1,8 +1,8 @@
 {
-  "image": "",
-  "version": "unreleased",
+  "image": "razor29/proxy-validator:v2.0.0-dev",
+  "version": "v2.0.0-dev",
   "is_latest": false,
-  "released_at": null,
-  "commit": null,
+  "released_at": "2026-03-25T16:50:29Z",
+  "commit": "c0e3a178b710a7c87f19de19e9a100627c70fbe7",
   "changelog": ""
 }
