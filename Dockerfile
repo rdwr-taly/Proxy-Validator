@@ -56,11 +56,11 @@ ENV PYTHONUNBUFFERED=1 \
     VALIDATION_TIMEOUT="5" \
     VALIDATION_CONCURRENCY="100"
 
-# Install runtime deps + showrunner-sdk
+# Install runtime deps (showrunner-sdk is in pyproject.toml)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl rsync openssh-client jq sshpass git && \
     rm -rf /var/lib/apt/lists/* && \
-    pip install --no-cache-dir poetry aiohttp "showrunner-sdk[full] @ git+https://github.com/rdwr-taly/showrunner-sdk.git@main"
+    pip install --no-cache-dir poetry aiohttp
 
 # Create a non-root user and group for security
 ARG UID=1000

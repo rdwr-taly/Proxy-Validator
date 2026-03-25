@@ -15,7 +15,7 @@ Scrapy = "^2.11.2"
 tqdm = "^4.66.5"
 PyYAML = "^6.0"
 hrequests = "^0.8.2"
-
+showrunner-sdk = {git = "https://github.com/rdwr-taly/showrunner-sdk.git", branch = "main", extras = ["full"]}
 
 [build-system]
 requires = ["poetry-core"]
