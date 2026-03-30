@@ -63,6 +63,7 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.prep_tags.outputs.tags }}
+          no-cache: true
 
       - name: Update .showrunner/release.json
         run: |
