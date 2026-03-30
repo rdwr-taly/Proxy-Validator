@@ -19,8 +19,9 @@ RUN apt-get update && \
         libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Poetry (pin packaging to avoid 'packaging.licenses' import error)
-RUN pip install --upgrade packaging && pip install poetry
+# Install Poetry pinned to 2.3.3 (matches poetry.lock) with packaging>=24.0
+# to avoid 'No module named packaging.licenses' error
+RUN pip install "packaging>=24.0" "poetry==2.3.3"
 
 # Verify Poetry version
 RUN poetry --version
@@ -33,9 +34,6 @@ RUN poetry install --no-root
 
 # Copy the rest of the application code (including proXXy.py)
 COPY . /app/
-
-# Ensure packaging module is up to date (fixes 'packaging.licenses' import error)
-RUN pip install --upgrade packaging
 
 # Install the project itself
 RUN poetry install
@@ -60,7 +58,7 @@ ENV PYTHONUNBUFFERED=1 \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl rsync openssh-client jq sshpass git && \
     rm -rf /var/lib/apt/lists/* && \
-    pip install --no-cache-dir poetry aiohttp
+    pip install --no-cache-dir "poetry==2.3.3" aiohttp
 
 # Create a non-root user and group for security
 ARG UID=1000
