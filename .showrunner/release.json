@@ -2,7 +2,7 @@
   "image": "razor29/proxy-validator:v2.0.0-dev",
   "version": "v2.0.0-dev",
   "is_latest": false,
-  "released_at": "2026-03-25T16:50:29Z",
-  "commit": "c0e3a178b710a7c87f19de19e9a100627c70fbe7",
+  "released_at": "2026-03-30T09:33:23Z",
+  "commit": "a2f6350e8a418e33e69453c75a1d2e04f1c87bcc",
   "changelog": ""
 }
