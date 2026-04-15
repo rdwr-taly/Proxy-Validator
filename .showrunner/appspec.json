@@ -62,17 +62,30 @@
   "icon": "fas fa-server",
   "id": "proxy-validator-job",
   "image_id_ref": "razor29/proxy-validator",
-  "scheduling_fields": {
-    "interval_unit": "minutes",
-    "interval_value": 20,
-    "max_concurrent_runs": 1,
-    "overlap_policy": "skip",
-    "start_time_utc": {
-      "label": "Start Time (UTC)",
-      "required": true
+  "lifecycleOptions": [
+    {
+      "description": "Run validation once and complete when the job exits successfully.",
+      "isDefault": true,
+      "label": "One-Time Job",
+      "lifecycle": "one_time"
     },
-    "type": "interval"
-  },
+    {
+      "description": "Run validation repeatedly on an interval. Each run exits and is scheduled again for the next interval.",
+      "label": "Recurring",
+      "lifecycle": "recurrent",
+      "scheduling_fields": {
+        "interval_unit": "minutes",
+        "interval_value": 20,
+        "max_concurrent_runs": 1,
+        "overlap_policy": "skip",
+        "start_time_utc": {
+          "label": "Start Time (UTC)",
+          "required": true
+        },
+        "type": "interval"
+      }
+    }
+  ],
   "subCategory": "Proxy Tools",
   "taskLifecycle": "one_time",
   "ui": {
