@@ -11,8 +11,9 @@ set -e
 ################################################################################
 
 echo ">>> Running proXXy Tool <<<"
-# Execute proXXy using poetry, passing along any arguments provided from the CMD
-poetry run python proXXy.py "$@"
+# The container installs dependencies into the image with pip, so invoke the
+# runtime interpreter directly instead of relying on Poetry being present.
+python /app/proXXy.py "$@"
 EXIT_CODE=$? # Capture exit code
 
 if [ $EXIT_CODE -ne 0 ]; then
@@ -34,9 +35,9 @@ else
    echo ">>> Found $PROXXY_OUTPUT_FILE. Proceeding with validation. <<<"
 fi
 
-# Execute the Python validation script using poetry to ensure access to aiohttp etc.
-# The python script reads /app/output/HTTP.txt and overwrites it with the validated list.
-poetry run python /app/validate_proxies.py
+# Execute the Python validation script using the installed runtime environment.
+# The script reads /app/output/HTTP.txt and overwrites it with the validated list.
+python /app/validate_proxies.py
 VALIDATION_EXIT_CODE=$?
 
 if [ $VALIDATION_EXIT_CODE -ne 0 ]; then
