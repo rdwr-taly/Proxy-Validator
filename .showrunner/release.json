@@ -1,8 +1,8 @@
 {
-  "image": "razor29/proxy-validator:v2.0.1-dev",
-  "version": "v2.0.1-dev",
+  "image": "razor29/proxy-validator:v2.1.0-sr3",
+  "version": "v2.1.0-sr3",
   "is_latest": false,
-  "released_at": "2026-04-15T11:35:01Z",
-  "commit": "4e273589fc1986ad74fe2665d795248bdf719d67",
-  "changelog": ""
+  "released_at": "2026-07-07T00:00:00Z",
+  "commit": "",
+  "changelog": "SR3 pilot: /report/report.json"
 }

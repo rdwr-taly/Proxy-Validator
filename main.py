@@ -20,12 +20,15 @@ Config file format:
 
 import json
 import os
+import signal
 import subprocess
 import sys
 import time
 import logging
 
 from showrunner_sdk import config, metrics, health
+
+from report import write_report
 
 logger = logging.getLogger("proxy-validator")
 logging.basicConfig(
@@ -77,10 +80,19 @@ def count_lines(filepath: str) -> int:
         return 0
 
 
-def run_job(cfg_data: dict) -> bool:
-    """Run the proxy validation pipeline."""
+def run_job(cfg_data: dict, results: dict) -> bool:
+    """Run the proxy validation pipeline.
+
+    ``results`` is populated in-place with the job's final outcome so the SR3
+    report writer can serialize it on ANY exit path (see ``main``). It is
+    updated at the end of the run; if the container is stopped before that,
+    ``results`` keeps its conservative defaults (job_success=False).
+    """
     start = time.time()
     health.set_status("running")
+
+    distribute = bool(cfg_data.get("distribute_file"))
+    results["distribution_requested"] = distribute
 
     args = apply_config_to_env(cfg_data)
 
@@ -104,9 +116,23 @@ def run_job(cfg_data: dict) -> bool:
     proxies_validated.set(output_count)
     proxies_failed.set(max(0, input_count - output_count))
 
-    if result.returncode == 0:
+    succeeded = result.returncode == 0
+
+    # Record final outcome for both Prometheus (Tier-0) and the SR3 report.
+    results.update(
+        {
+            "proxies_tested": input_count,
+            "proxies_validated": output_count,
+            "proxies_failed": max(0, input_count - output_count),
+            "job_duration": elapsed,
+            "job_success": succeeded,
+        }
+    )
+
+    if succeeded:
         job_success.set(1)
-        distribution_success.set(1 if cfg_data.get("distribute_file") else 0)
+        distribution_success.set(1 if distribute else 0)
+        results["distribution_success"] = bool(distribute)
         health.set_status("completed")
         logger.info(
             "Job completed: %d/%d proxies validated in %.1fs",
@@ -115,38 +141,68 @@ def run_job(cfg_data: dict) -> bool:
         return True
     else:
         job_success.set(0)
+        results["distribution_success"] = False
         health.set_status("error", reason=f"exit code {result.returncode}")
         logger.error("Job failed with exit code %d after %.1fs", result.returncode, elapsed)
         return False
 
 
+def _install_signal_handlers() -> None:
+    """Turn SIGTERM/SIGINT into a normal exception so the ``finally`` runs.
+
+    Without this, a container stop (SIGTERM) would kill the process outright and
+    the SR3 report would never be written. Raising ``SystemExit`` unwinds the
+    stack through ``main``'s ``try/finally``, writing whatever outcome we have.
+    """
+
+    def _handler(signum, _frame):
+        logger.info("Received signal %d — writing report and exiting", signum)
+        raise SystemExit(143 if signum == signal.SIGTERM else 130)
+
+    signal.signal(signal.SIGTERM, _handler)
+    signal.signal(signal.SIGINT, _handler)
+
+
 def main() -> None:
+    _install_signal_handlers()
+
+    # Conservative default outcome; overwritten by run_job on completion and
+    # written by the SR3 report writer on EVERY exit path (completion, stop,
+    # error) via the finally below.
+    results: dict = {"job_success": False}
+    success = False
+
     cfg = config.load()
 
     # Start metrics server — stays alive briefly after job for ShowRunner to scrape
     metrics.start_server()
 
-    if not cfg:
-        # No config file — fall back to env vars (backward compat)
-        logger.info("No config file found, using environment variables")
-        cfg = {
-            "distribute_file": os.environ.get("DISTRIBUTE_FILE", "").lower() in ("1", "true", "yes"),
-            "remote_dest_path": os.environ.get("REMOTE_DEST_PATH", ""),
-            "validation_target_url": os.environ.get("VALIDATION_TARGET_URL", "http://httpbin.org/ip"),
-            "validation_timeout": int(os.environ.get("VALIDATION_TIMEOUT", "5")),
-            "validation_concurrency": int(os.environ.get("VALIDATION_CONCURRENCY", "100")),
-        }
-        dist_json = os.environ.get("DISTRIBUTION_CONFIG_JSON", "[]")
-        try:
-            cfg["distribution_config"] = json.loads(dist_json)
-        except json.JSONDecodeError:
-            cfg["distribution_config"] = []
+    try:
+        if not cfg:
+            # No config file — fall back to env vars (backward compat)
+            logger.info("No config file found, using environment variables")
+            cfg = {
+                "distribute_file": os.environ.get("DISTRIBUTE_FILE", "").lower() in ("1", "true", "yes"),
+                "remote_dest_path": os.environ.get("REMOTE_DEST_PATH", ""),
+                "validation_target_url": os.environ.get("VALIDATION_TARGET_URL", "http://httpbin.org/ip"),
+                "validation_timeout": int(os.environ.get("VALIDATION_TIMEOUT", "5")),
+                "validation_concurrency": int(os.environ.get("VALIDATION_CONCURRENCY", "100")),
+            }
+            dist_json = os.environ.get("DISTRIBUTION_CONFIG_JSON", "[]")
+            try:
+                cfg["distribution_config"] = json.loads(dist_json)
+            except json.JSONDecodeError:
+                cfg["distribution_config"] = []
 
-    success = run_job(cfg)
+        success = run_job(cfg, results)
 
-    # Keep metrics server alive briefly so ShowRunner can scrape final results
-    logger.info("Holding metrics server for 30s for scraping...")
-    time.sleep(30)
+        # Keep metrics server alive briefly so ShowRunner can scrape final results
+        logger.info("Holding metrics server for 30s for scraping...")
+        time.sleep(30)
+    finally:
+        # SR3: emit /report/report.json on the completion path AND on stop/error.
+        # Best-effort — never masks the job's own exit code.
+        write_report(results)
 
     sys.exit(0 if success else 1)
 

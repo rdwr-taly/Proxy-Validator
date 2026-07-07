@@ -58,9 +58,10 @@
   },
   "deploymentContext": "job",
   "description": "Validates generated proxy lists and (optionally) distributes the final HTTP.txt to remote servers using username/password.",
-  "displayName": "Proxy Validator Job",
+  "displayName": "Proxy Validator Job (SR3)",
   "icon": "fas fa-server",
-  "id": "proxy-validator-job",
+  "id": "proxy-validator-job-sr3",
+  "schema_version": 7,
   "image_id_ref": "razor29/proxy-validator",
   "lifecycleOptions": [
     {
@@ -88,6 +89,117 @@
   ],
   "subCategory": "Proxy Tools",
   "taskLifecycle": "one_time",
+  "sdk": {
+    "contract_version": 1,
+    "capabilities": [
+      "report_pull_file",
+      "measures"
+    ],
+    "reporting": {
+      "mode": "file",
+      "path": "/report/report.json",
+      "sealed_field": "status",
+      "sealed_value": "final",
+      "poll_interval_sec": 30
+    },
+    "measures": [
+      {
+        "key": "proxies_tested",
+        "label": "Proxies tested",
+        "type": "count",
+        "unit": "proxies",
+        "source": {
+          "kind": "report_json",
+          "path": "proxies_tested"
+        },
+        "success_checkable": false
+      },
+      {
+        "key": "proxies_validated",
+        "label": "Proxies validated",
+        "type": "count",
+        "unit": "proxies",
+        "higher_is_better": true,
+        "source": {
+          "kind": "report_json",
+          "path": "proxies_validated"
+        },
+        "success_checkable": true
+      },
+      {
+        "key": "proxies_failed",
+        "label": "Proxies failed",
+        "type": "count",
+        "unit": "proxies",
+        "source": {
+          "kind": "report_json",
+          "path": "proxies_failed"
+        },
+        "success_checkable": false
+      },
+      {
+        "key": "validation_success_ratio",
+        "label": "Validation success ratio",
+        "type": "ratio",
+        "unit": "fraction",
+        "higher_is_better": true,
+        "source": {
+          "kind": "report_json",
+          "path": "validation_success_ratio"
+        },
+        "success_checkable": true
+      },
+      {
+        "key": "job_success",
+        "label": "Job succeeded",
+        "type": "enum",
+        "options": [
+          "true",
+          "false"
+        ],
+        "source": {
+          "kind": "report_json",
+          "path": "job_success"
+        },
+        "success_checkable": true
+      },
+      {
+        "key": "job_duration_seconds",
+        "label": "Job duration",
+        "type": "number",
+        "unit": "s",
+        "source": {
+          "kind": "report_json",
+          "path": "job_duration_seconds"
+        },
+        "success_checkable": false
+      }
+    ],
+    "default_playbook": {
+      "steps": [
+        {
+          "id": "validation_completed",
+          "name": "Validation job completed successfully",
+          "check": {
+            "source": "report",
+            "field": "job_success",
+            "op": "==",
+            "value": "true"
+          }
+        },
+        {
+          "id": "proxies_found",
+          "name": "At least one proxy validated",
+          "check": {
+            "source": "report",
+            "field": "proxies_validated",
+            "op": ">=",
+            "value": 1
+          }
+        }
+      ]
+    }
+  },
   "ui": {
     "deployment_form_sections": [
       {

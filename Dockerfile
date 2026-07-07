@@ -59,9 +59,14 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # ShowRunner entry point
 COPY --chown=proxxy_user:proxxy_user main.py /app/main.py
+# SR3 report writer
+COPY --chown=proxxy_user:proxxy_user report.py /app/report.py
 
 # Config mount point for SDK
 RUN mkdir -p /config && chown proxxy_user:proxxy_user /config
+
+# SR3: writable dir for the report ShowRunner pulls (/report/report.json).
+RUN mkdir -p /report && chown proxxy_user:proxxy_user /report
 
 USER proxxy_user
 
