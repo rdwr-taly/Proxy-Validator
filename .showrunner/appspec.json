@@ -221,12 +221,12 @@
           },
           {
             "id": "pv3",
-            "label": "file distributed",
-            "kind": "require",
+            "label": "file distribution did not fail",
+            "kind": "alert_when",
             "source": "report",
             "field": "distribution_success",
             "op": "==",
-            "value": "true",
+            "value": "false",
             "severity": "error",
             "enabled": true
           },
@@ -268,12 +268,12 @@
           },
           {
             "id": "pv3",
-            "label": "file distributed",
-            "kind": "require",
+            "label": "file distribution did not fail",
+            "kind": "alert_when",
             "source": "report",
             "field": "distribution_success",
             "op": "==",
-            "value": "true",
+            "value": "false",
             "severity": "error",
             "enabled": true
           }
