@@ -51,10 +51,33 @@ def test_build_report_failed_run_serializes_false() -> None:
     assert report["status"] == "final"
 
 
-def test_build_report_no_distribution_omits_measure() -> None:
-    # distribution_requested falsey -> distribution_success not surfaced
+def test_build_report_no_distribution_is_first_class_na() -> None:
+    # distribution_success is ALWAYS present (Task 11: first-class measure so
+    # it can be checked by user-defined app alerts) — "n/a" when distribution
+    # wasn't requested, rather than omitted from measures.
     report = build_report({"job_success": True, "proxies_tested": 10, "proxies_validated": 10})
-    assert "distribution_success" not in report["measures"]
+    assert "distribution_success" in report["measures"]
+    assert report["measures"]["distribution_success"] == "n/a"
+
+
+def test_build_report_distribution_requested_but_failed() -> None:
+    report = build_report(
+        {
+            "job_success": True,
+            "proxies_tested": 10,
+            "proxies_validated": 10,
+            "distribution_requested": True,
+            "distribution_success": False,
+        }
+    )
+    assert report["measures"]["distribution_success"] == "false"
+
+
+def test_build_report_empty_results_distribution_is_na() -> None:
+    # No distribution_requested key at all (e.g. container stopped before
+    # run_job set it) -> still always present, defaults to "n/a".
+    report = build_report({})
+    assert report["measures"]["distribution_success"] == "n/a"
 
 
 def test_build_report_empty_results_is_conservative() -> None:

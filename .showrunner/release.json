@@ -1,8 +1,8 @@
 {
-  "image": "razor29/proxy-validator:v2.1.0-sr3",
-  "version": "v2.1.0-sr3",
+  "image": "razor29/proxy-validator:v2.1.1-sr3",
+  "version": "v2.1.1-sr3",
   "is_latest": false,
-  "released_at": "2026-07-07T09:51:11Z",
-  "commit": "e04d0712bdfd4cbb8e387a611983830058acad33",
-  "changelog": ""
+  "released_at": "2026-07-08T00:00:00Z",
+  "commit": "",
+  "changelog": "SR3 Task 11: distribution_success is now a first-class enum measure (true/false/n/a) + alert_profiles (continuous/oneshot) + reporting cadence for user-defined app alerts."
 }

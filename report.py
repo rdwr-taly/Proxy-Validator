@@ -52,9 +52,14 @@ def build_report(results: dict[str, Any]) -> dict[str, Any]:
 
     ``results`` is the dict populated by ``run_job`` (see ``main.py``):
         proxies_tested, proxies_validated, proxies_failed, job_success,
-        job_duration, distribution_success (optional), distribution_requested.
+        job_duration, distribution_success, distribution_requested.
     Missing keys default to a conservative "job did not complete" shape, which
     is what gets written if the container is stopped mid-run.
+
+    ``distribution_success`` is always present in the returned ``measures``
+    (first-class, per Task 11 of the User-Defined App Alerts feature): it is
+    ``"n/a"`` when ``distribution_requested`` is falsey, else ``"true"``/
+    ``"false"`` from ``results["distribution_success"]``.
     """
     tested = int(results.get("proxies_tested", 0) or 0)
     validated = int(results.get("proxies_validated", 0) or 0)
@@ -64,6 +69,15 @@ def build_report(results: dict[str, Any]) -> dict[str, Any]:
     success = bool(results.get("job_success", False))
     duration = round(float(results.get("job_duration", 0.0) or 0.0), 1)
 
+    # Distribution is optional. The measure is always present (first-class,
+    # checkable by user-defined app alerts — Task 11) but its value reflects
+    # whether the run actually asked to push the validated list to remote
+    # servers: "n/a" when distribution wasn't requested, else "true"/"false".
+    if results.get("distribution_requested"):
+        distribution_value = _as_bool_str(results.get("distribution_success", False))
+    else:
+        distribution_value = "n/a"
+
     measures: dict[str, Any] = {
         "proxies_tested": tested,
         "proxies_validated": validated,
@@ -71,14 +85,8 @@ def build_report(results: dict[str, Any]) -> dict[str, Any]:
         "validation_success_ratio": ratio,
         "job_success": _as_bool_str(success),
         "job_duration_seconds": duration,
+        "distribution_success": distribution_value,
     }
-
-    # Distribution is optional — only surface it when the run actually asked to
-    # push the validated list to remote servers.
-    if results.get("distribution_requested"):
-        measures["distribution_success"] = _as_bool_str(
-            results.get("distribution_success", False)
-        )
 
     if not success:
         summary = (

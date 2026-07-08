@@ -100,7 +100,9 @@
       "path": "/report/report.json",
       "sealed_field": "status",
       "sealed_value": "final",
-      "poll_interval_sec": 30
+      "poll_interval_sec": 30,
+      "expected_cadence_seconds": 1800,
+      "grace_seconds": 600
     },
     "measures": [
       {
@@ -173,8 +175,112 @@
           "path": "job_duration_seconds"
         },
         "success_checkable": false
+      },
+      {
+        "key": "distribution_success",
+        "label": "Distribution succeeded",
+        "type": "enum",
+        "options": [
+          "true",
+          "false",
+          "n/a"
+        ],
+        "source": {
+          "kind": "report_json",
+          "path": "distribution_success"
+        },
+        "success_checkable": true
       }
     ],
+    "alert_profiles": [
+      {
+        "id": "continuous",
+        "label": "Continuous demo",
+        "rules": [
+          {
+            "id": "pv1",
+            "label": "validated at least 1 proxy",
+            "kind": "require",
+            "source": "report",
+            "field": "proxies_validated",
+            "op": ">=",
+            "value": 1,
+            "severity": "error",
+            "enabled": true
+          },
+          {
+            "id": "pv2",
+            "label": "job succeeded",
+            "kind": "require",
+            "source": "report",
+            "field": "job_success",
+            "op": "==",
+            "value": "true",
+            "severity": "error",
+            "enabled": true
+          },
+          {
+            "id": "pv3",
+            "label": "file distributed",
+            "kind": "require",
+            "source": "report",
+            "field": "distribution_success",
+            "op": "==",
+            "value": "true",
+            "severity": "error",
+            "enabled": true
+          },
+          {
+            "id": "pv4",
+            "label": "job stopped running",
+            "kind": "alert_when",
+            "source": "liveness",
+            "severity": "critical",
+            "enabled": true
+          }
+        ]
+      },
+      {
+        "id": "oneshot",
+        "label": "One-shot / test",
+        "rules": [
+          {
+            "id": "pv1",
+            "label": "validated at least 1 proxy",
+            "kind": "require",
+            "source": "report",
+            "field": "proxies_validated",
+            "op": ">=",
+            "value": 1,
+            "severity": "error",
+            "enabled": true
+          },
+          {
+            "id": "pv2",
+            "label": "job succeeded",
+            "kind": "require",
+            "source": "report",
+            "field": "job_success",
+            "op": "==",
+            "value": "true",
+            "severity": "error",
+            "enabled": true
+          },
+          {
+            "id": "pv3",
+            "label": "file distributed",
+            "kind": "require",
+            "source": "report",
+            "field": "distribution_success",
+            "op": "==",
+            "value": "true",
+            "severity": "error",
+            "enabled": true
+          }
+        ]
+      }
+    ],
+    "default_alert_profile": "continuous",
     "default_playbook": {
       "steps": [
         {
