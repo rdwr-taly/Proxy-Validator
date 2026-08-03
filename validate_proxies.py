@@ -12,23 +12,50 @@ CONCURRENCY = int(os.environ.get("VALIDATION_CONCURRENCY", 200))
 INPUT_FILE_PATH = os.environ.get("VALIDATION_INPUT", "/app/output/HTTP.txt")
 OUTPUT_FILE_PATH = os.environ.get("VALIDATION_OUTPUT", "/app/output/HTTP.txt")
 
+# Extra sources of CONNECT-capable proxies to fetch directly
+# These use host:port:country format and need parsing
+EXTRA_CONNECT_SOURCES = [
+    "https://raw.githubusercontent.com/zloi-user/hideip.me/main/connect.txt",
+    "https://raw.githubusercontent.com/zloi-user/hideip.me/main/https.txt",
+]
+
 # Ports that are almost certainly SOCKS, not HTTP
 SOCKS_PORTS = {1080, 1081, 9050, 9150, 4145}
 
-# Regex to confirm we got a real IP response (not an error page)
+# Regex to confirm we got a real IP response
 IP_PATTERN = re.compile(r'"origin"\s*:\s*"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
 
 
-def is_valid_proxy(line: str) -> bool:
-    """Check host:port format."""
+def parse_proxy_line(line: str) -> str | None:
+    """Parse host:port from various formats (host:port, host:port:country, etc.)"""
+    line = line.strip()
+    if not line:
+        return None
     parts = line.split(':')
-    if len(parts) != 2:
-        return False
-    host, port = parts
-    if not port.isdigit():
-        return False
-    p = int(port)
-    return 1 <= p <= 65535 and '.' in host
+    if len(parts) >= 2 and parts[1].isdigit():
+        host = parts[0]
+        port = int(parts[1])
+        if 1 <= port <= 65535 and '.' in host:
+            return f"{host}:{port}"
+    return None
+
+
+async def fetch_extra_sources(session: aiohttp.ClientSession) -> list[str]:
+    """Fetch additional CONNECT-capable proxy lists not handled by proXXy."""
+    extra = []
+    for url in EXTRA_CONNECT_SOURCES:
+        try:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+                if resp.status == 200:
+                    text = await resp.text()
+                    for line in text.splitlines():
+                        proxy = parse_proxy_line(line)
+                        if proxy:
+                            extra.append(proxy)
+                    print(f"  [+] Fetched {url.split('/')[-1]}: got {len(text.splitlines())} lines")
+        except Exception as e:
+            print(f"  [-] Failed {url.split('/')[-1]}: {e}")
+    return extra
 
 
 async def test_proxy(proxy: str, session: aiohttp.ClientSession, sem: asyncio.Semaphore) -> tuple[str, float] | None:
@@ -51,11 +78,9 @@ async def test_proxy(proxy: str, session: aiohttp.ClientSession, sem: asyncio.Se
                 elapsed = time.monotonic() - t0
                 if resp.status < 200 or resp.status >= 300:
                     return None
-                # Read body to confirm it's a real proxy response
                 body = await resp.text(encoding='utf-8', errors='ignore')
                 if IP_PATTERN.search(body):
                     return (proxy, elapsed)
-                # If target is not httpbin, accept any 2xx
                 if "httpbin" not in TARGET_URL:
                     return (proxy, elapsed)
                 return None
@@ -72,23 +97,34 @@ async def main():
     print(f"  Output:      {OUTPUT_FILE_PATH}")
     print()
 
-    # --- Read & deduplicate ---
+    # --- Read proXXy output ---
+    proxies_from_file = []
     try:
         with open(INPUT_FILE_PATH, 'r') as f:
-            raw_lines = f.readlines()
+            for line in f:
+                proxy = parse_proxy_line(line)
+                if proxy:
+                    proxies_from_file.append(proxy)
     except FileNotFoundError:
-        print(f"ERROR: {INPUT_FILE_PATH} not found")
-        return
+        print(f"WARNING: {INPUT_FILE_PATH} not found, will use extra sources only")
 
+    print(f"  From proXXy: {len(proxies_from_file)}")
+
+    # --- Fetch extra CONNECT sources directly ---
+    print(f"  Fetching {len(EXTRA_CONNECT_SOURCES)} extra CONNECT sources...")
+    connector = aiohttp.TCPConnector(limit=10, force_close=True)
+    async with aiohttp.ClientSession(connector=connector) as fetch_session:
+        extra_proxies = await fetch_extra_sources(fetch_session)
+    print(f"  From extras: {len(extra_proxies)}")
+
+    # --- Merge and deduplicate ---
     seen = set()
     proxies = []
-    for line in raw_lines:
-        p = line.strip()
-        if p and is_valid_proxy(p) and p not in seen:
+    for p in proxies_from_file + extra_proxies:
+        if p not in seen:
             seen.add(p)
             proxies.append(p)
 
-    print(f"  Raw lines:   {len(raw_lines)}")
     print(f"  After dedup: {len(proxies)}")
     print()
 
@@ -100,13 +136,13 @@ async def main():
 
     # --- Validate concurrently ---
     sem = asyncio.Semaphore(CONCURRENCY)
-    connector = aiohttp.TCPConnector(
+    test_connector = aiohttp.TCPConnector(
         limit=0,
         force_close=True,
         family=socket.AF_INET,
         enable_cleanup_closed=True,
     )
-    async with aiohttp.ClientSession(connector=connector) as session:
+    async with aiohttp.ClientSession(connector=test_connector) as session:
         tasks = [test_proxy(p, session, sem) for p in proxies]
         results = await asyncio.gather(*tasks)
 
