@@ -20,7 +20,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry
-RUN pip install poetry
+RUN pip install --upgrade pip && pip install "poetry>=1.8,<2.0"
 
 # Verify Poetry version
 RUN poetry --version
@@ -49,15 +49,15 @@ ENV PYTHONUNBUFFERED=1 \
     POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_CREATE=false \
     # --- Add ENV VARS for validation script ---
-    VALIDATION_TARGET_URL="http://httpbin.org/ip" \
-    VALIDATION_TIMEOUT="5" \
-    VALIDATION_CONCURRENCY="100"
+    VALIDATION_TARGET_URL="https://httpbin.org/ip" \
+    VALIDATION_TIMEOUT="6" \
+    VALIDATION_CONCURRENCY="150"
 
 # Install poetry and curl (needed by entrypoint.sh maybe)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl rsync openssh-client jq sshpass && \
     rm -rf /var/lib/apt/lists/* && \
-    pip install --no-cache-dir poetry aiohttp
+    pip install --no-cache-dir "poetry>=1.8,<2.0" aiohttp
 
 # Create a non-root user and group for security
 ARG UID=1000
