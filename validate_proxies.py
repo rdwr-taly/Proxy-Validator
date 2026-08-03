@@ -47,7 +47,7 @@ async def fetch_extra_sources(session: aiohttp.ClientSession) -> list[str]:
         try:
             async with session.get(url, timeout=aiohttp.ClientTimeout(total=15)) as resp:
                 if resp.status == 200:
-                    text = await resp.text()
+                    text = await resp.text(errors="ignore")
                     for line in text.splitlines():
                         proxy = parse_proxy_line(line)
                         if proxy:
