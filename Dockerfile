@@ -51,7 +51,7 @@ ENV PYTHONUNBUFFERED=1 \
     # --- Add ENV VARS for validation script ---
     VALIDATION_TARGET_URL="https://httpbin.org/ip" \
     VALIDATION_TIMEOUT="6" \
-    VALIDATION_CONCURRENCY="150"
+    VALIDATION_CONCURRENCY="200"
 
 # Install poetry and curl (needed by entrypoint.sh maybe)
 RUN apt-get update && \

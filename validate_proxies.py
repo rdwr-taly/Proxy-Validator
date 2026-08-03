@@ -8,7 +8,7 @@ import time
 # --- Configuration ---
 TARGET_URL = os.environ.get("VALIDATION_TARGET_URL", "https://httpbin.org/ip")
 CONNECT_TIMEOUT = int(os.environ.get("VALIDATION_TIMEOUT", 6))
-CONCURRENCY = int(os.environ.get("VALIDATION_CONCURRENCY", 150))
+CONCURRENCY = int(os.environ.get("VALIDATION_CONCURRENCY", 200))
 INPUT_FILE_PATH = os.environ.get("VALIDATION_INPUT", "/app/output/HTTP.txt")
 OUTPUT_FILE_PATH = os.environ.get("VALIDATION_OUTPUT", "/app/output/HTTP.txt")
 
