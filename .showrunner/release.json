@@ -2,7 +2,7 @@
   "image": "razor29/proxy-validator:v2.2.0-sr3",
   "version": "v2.2.0-sr3",
   "is_latest": false,
-  "released_at": "2026-07-08T11:01:37Z",
-  "commit": "b87eec4ff49b316bdea3ebad521aa52867ade567",
-  "changelog": "Merges the 2026-08-03 main-branch hotfix line (931e65d..fc84c41: proxy source overhaul, HTTPS validation, direct CONNECT source fetching, concurrency 200, UTF-8 decode fix) into the SR3 SDK line; adds aiohttp to requirements.txt; report counts now come from the validator's stats sidecar."
+  "released_at": "2026-09-01T22:04:15Z",
+  "commit": "27b6fbaaae6b4de001271d83146096351649a441",
+  "changelog": ""
 }
