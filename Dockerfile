@@ -29,9 +29,9 @@ COPY . /app/
 FROM python:3.11-slim AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
-    VALIDATION_TARGET_URL="http://httpbin.org/ip" \
-    VALIDATION_TIMEOUT="5" \
-    VALIDATION_CONCURRENCY="100"
+    VALIDATION_TARGET_URL="https://httpbin.org/ip" \
+    VALIDATION_TIMEOUT="6" \
+    VALIDATION_CONCURRENCY="200"
 
 # Runtime system deps
 RUN apt-get update && \

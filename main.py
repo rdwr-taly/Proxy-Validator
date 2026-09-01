@@ -12,9 +12,9 @@ Config file format:
     "distribution_config": [
         {"host": "10.0.0.1", "user": "radware", "password": "..."}
     ],
-    "validation_target_url": "http://httpbin.org/ip",
-    "validation_timeout": 5,
-    "validation_concurrency": 100
+    "validation_target_url": "https://httpbin.org/ip",
+    "validation_timeout": 6,
+    "validation_concurrency": 200
 }
 """
 
@@ -28,7 +28,7 @@ import logging
 
 from showrunner_sdk import config, metrics, health
 
-from report import write_report
+from report import DEFAULT_STATS_PATH, load_validation_stats, write_report
 
 logger = logging.getLogger("proxy-validator")
 logging.basicConfig(
@@ -43,7 +43,7 @@ proxies_failed = metrics.gauge("proxies_failed_total", "Proxies that failed vali
 job_duration = metrics.gauge("job_duration_seconds", "Duration of last validation run")
 job_success = metrics.gauge("job_success", "1 if last run succeeded, 0 if failed")
 distribution_success = metrics.gauge("distribution_success", "1 if distribution succeeded")
-metrics.set_app_info(name="proxy-validator", version="1.1.0")
+metrics.set_app_info(name="proxy-validator", version="2.2.0-sr3")
 
 
 def apply_config_to_env(cfg_data: dict) -> list[str]:
@@ -96,7 +96,15 @@ def run_job(cfg_data: dict, results: dict) -> bool:
 
     args = apply_config_to_env(cfg_data)
 
-    # Count input proxies (before validation)
+    # Fallback only: line count of the proXXy output file before the run. The
+    # authoritative counts come from the validator's stats sidecar (below) —
+    # the validator fetches extra CONNECT sources itself, so what it tested is
+    # more than what proXXy wrote, and the file is empty on a fresh container.
+    stats_path = os.environ.get("VALIDATION_STATS", DEFAULT_STATS_PATH)
+    try:
+        os.remove(stats_path)  # never report a previous run's numbers
+    except OSError:
+        pass
     input_count = count_lines("/app/output/HTTP.txt")
 
     # Run entrypoint.sh which handles the full pipeline
@@ -109,8 +117,14 @@ def run_job(cfg_data: dict, results: dict) -> bool:
     elapsed = time.time() - start
     job_duration.set(elapsed)
 
-    # Count output proxies (after validation)
-    output_count = count_lines("/app/output/HTTP.txt")
+    # Prefer the validator's own counts; fall back to line counts of the output.
+    stats = load_validation_stats(stats_path)
+    if stats is not None:
+        input_count = stats["tested"]
+        output_count = stats["passed"]
+    else:
+        output_count = count_lines("/app/output/HTTP.txt")
+        input_count = max(input_count, output_count)
 
     proxies_tested.set(input_count)
     proxies_validated.set(output_count)
@@ -184,9 +198,9 @@ def main() -> None:
             cfg = {
                 "distribute_file": os.environ.get("DISTRIBUTE_FILE", "").lower() in ("1", "true", "yes"),
                 "remote_dest_path": os.environ.get("REMOTE_DEST_PATH", ""),
-                "validation_target_url": os.environ.get("VALIDATION_TARGET_URL", "http://httpbin.org/ip"),
-                "validation_timeout": int(os.environ.get("VALIDATION_TIMEOUT", "5")),
-                "validation_concurrency": int(os.environ.get("VALIDATION_CONCURRENCY", "100")),
+                "validation_target_url": os.environ.get("VALIDATION_TARGET_URL", "https://httpbin.org/ip"),
+                "validation_timeout": int(os.environ.get("VALIDATION_TIMEOUT", "6")),
+                "validation_concurrency": int(os.environ.get("VALIDATION_CONCURRENCY", "200")),
             }
             dist_json = os.environ.get("DISTRIBUTION_CONFIG_JSON", "[]")
             try:

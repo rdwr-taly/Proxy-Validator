@@ -9,7 +9,7 @@ import sys
 # report.py lives at the repo root (same layout as main.py); make it importable.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from report import build_report, write_report  # noqa: E402
+from report import build_report, load_validation_stats, write_report  # noqa: E402
 
 
 def _completed_results() -> dict:
@@ -111,3 +111,34 @@ def test_write_report_env_override(tmp_path, monkeypatch) -> None:
 def test_write_report_unwritable_path_degrades() -> None:
     # A path under a file (not a dir) can't be created -> returns False, no raise.
     assert write_report({"job_success": True}, "/dev/null/nope/report.json") is False
+
+
+def test_load_validation_stats_reads_validator_sidecar(tmp_path) -> None:
+    # validate_proxies.py writes this after the 2026-08-03 hotfix line; "tested"
+    # includes the extra CONNECT sources it fetches itself.
+    p = tmp_path / "validation_stats.json"
+    p.write_text(json.dumps({"tested": 1200, "passed": 340, "from_proxxy": 800, "from_extras": 400}))
+    assert load_validation_stats(str(p)) == {"tested": 1200, "passed": 340}
+
+
+def test_load_validation_stats_missing_or_malformed_is_none(tmp_path) -> None:
+    assert load_validation_stats(str(tmp_path / "nope.json")) is None
+    bad = tmp_path / "bad.json"
+    bad.write_text("{not json")
+    assert load_validation_stats(str(bad)) is None
+    partial = tmp_path / "partial.json"
+    partial.write_text(json.dumps({"tested": 5}))
+    assert load_validation_stats(str(partial)) is None
+    inconsistent = tmp_path / "inconsistent.json"
+    inconsistent.write_text(json.dumps({"tested": 5, "passed": 9}))
+    assert load_validation_stats(str(inconsistent)) is None
+
+
+def test_build_report_from_sidecar_counts_keeps_ratio_sane() -> None:
+    # tested > validated even when extras were added mid-run (the old line-count
+    # approach could yield validated > tested and clamp failed to 0).
+    report = build_report({"proxies_tested": 1200, "proxies_validated": 340,
+                           "proxies_failed": 860, "job_success": True, "job_duration": 90.2})
+    m = report["measures"]
+    assert m["proxies_failed"] == 860
+    assert 0.0 < m["validation_success_ratio"] < 1.0

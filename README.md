@@ -46,9 +46,9 @@ name are passed directly to `proXXy.py`.
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
-| `VALIDATION_TARGET_URL` | URL used to test proxies | `http://httpbin.org/ip` |
-| `VALIDATION_TIMEOUT` | Timeout in seconds | `5` |
-| `VALIDATION_CONCURRENCY` | Maximum concurrent checks | `100` |
+| `VALIDATION_TARGET_URL` | URL used to test proxies | `https://httpbin.org/ip` |
+| `VALIDATION_TIMEOUT` | Timeout in seconds | `6` |
+| `VALIDATION_CONCURRENCY` | Maximum concurrent checks | `200` |
 
 Example:
 

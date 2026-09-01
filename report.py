@@ -35,6 +35,26 @@ from typing import Any
 LOGGER = logging.getLogger(__name__)
 
 DEFAULT_REPORT_PATH = "/report/report.json"
+# Sidecar written by validate_proxies.py with the run's real tested/passed counts.
+# Since the 2026-08-03 hotfix the validator fetches extra CONNECT sources itself,
+# so "tested" can no longer be derived from the proXXy output file by a caller.
+DEFAULT_STATS_PATH = "/app/output/validation_stats.json"
+
+
+def load_validation_stats(path: str | None = None) -> dict[str, int] | None:
+    """Read the validator's stats sidecar. Returns ``{"tested", "passed"}`` or
+    ``None`` when the file is missing/malformed (caller falls back to line counts).
+    """
+    target = Path(path or os.getenv("VALIDATION_STATS", DEFAULT_STATS_PATH))
+    try:
+        data = json.loads(target.read_text(encoding="utf-8"))
+        tested = int(data["tested"])
+        passed = int(data["passed"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    if tested < 0 or passed < 0 or passed > tested:
+        return None
+    return {"tested": tested, "passed": passed}
 
 
 def _as_bool_str(value: Any) -> str:
@@ -125,4 +145,4 @@ def write_report(results: dict[str, Any], path: str | None = None) -> bool:
         return False
 
 
-__all__ = ["build_report", "write_report", "DEFAULT_REPORT_PATH"]
+__all__ = ["build_report", "write_report", "load_validation_stats", "DEFAULT_REPORT_PATH", "DEFAULT_STATS_PATH"]
