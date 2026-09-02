@@ -1,8 +1,8 @@
 {
-  "image": "razor29/proxy-validator:v2.2.0-sr3",
-  "version": "v2.2.0-sr3",
-  "is_latest": false,
-  "released_at": "2026-09-01T22:04:15Z",
-  "commit": "27b6fbaaae6b4de001271d83146096351649a441",
+  "image": "razor29/proxy-validator:v3.0.0",
+  "version": "v3.0.0",
+  "is_latest": true,
+  "released_at": "2026-09-02T09:42:26Z",
+  "commit": "8a08c51180c06b9858c59680e8178fdfc2dde688",
   "changelog": ""
 }
