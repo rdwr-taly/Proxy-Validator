@@ -67,6 +67,8 @@ HTTP:
   url: https://raw.githubusercontent.com/ErcinDedeoglu/proxies/main/proxies/http.txt
 - response_time_ms: 108.6
   url: https://raw.githubusercontent.com/elliottophellia/yakumo/master/results/http/global/http_checked.txt
+- response_time_ms: 200.0
+  url: https://rcloak.com/api/proxies/raw?protocol=all
 HTTPS:
 - response_time_ms: 85.6
   url: https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-https.txt
